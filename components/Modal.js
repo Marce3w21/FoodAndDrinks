@@ -5,13 +5,13 @@ import { Overlay } from 'react-native-elements'
 export default function Modal({ isVisible, setVisible, children }) {
     return (
         <Overlay
-            isVisible ={isVisible}
+            isVisible={isVisible}
             overlayStyle={styles.overlay}
             onBackdropPress={() => setVisible(false)}
-    >
-        {
-            children
-        }        
+        >
+            {
+                children
+            }
         </Overlay>
     )
 }

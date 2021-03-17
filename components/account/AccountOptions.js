@@ -1,16 +1,18 @@
-import React, {useState} from 'react'
+import React, { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Icon, ListItem } from 'react-native-elements'
 import { map } from 'lodash';
+
 import Modal from '../Modal';
 import ChangeDisplayNameForm from './ChangeDisplayNameForm';
+import ChangeEmailForm from './ChangeEmailForm';
+import ChangePasswordForm from './ChangePasswordForm';
 
 export default function AccountOptions({ user, toastRef, setReloadUser }) {
-    
-    const [showModal, setShowModal] =useState(false)
-    const [renderComponent, setRenderComponent] =   useState(null)
+    const [showModal, setShowModal] = useState(false)
+    const [renderComponent, setRenderComponent] = useState(null)
 
-    const  generateOptions = () =>{
+    const generateOptions = () => {         
         return [
             {
                 title: "Cambiar Nombres y Apellidos",
@@ -18,7 +20,7 @@ export default function AccountOptions({ user, toastRef, setReloadUser }) {
                 iconColorLeft: "#a7bfd3",
                 iconNameRight: "chevron-right",
                 iconColorRight: "#a7bfd3",
-                onPress: () => selectedComponent("displayName") 
+                onPress: () => selectedComponent("displayName")
             },
             {
                 title: "Cambiar Email",
@@ -26,7 +28,7 @@ export default function AccountOptions({ user, toastRef, setReloadUser }) {
                 iconColorLeft: "#a7bfd3",
                 iconNameRight: "chevron-right",
                 iconColorRight: "#a7bfd3",
-                onPress: () => selectedComponent("email") 
+                onPress: () => selectedComponent("email")
             },
             {
                 title: "Cambiar Contraseña",
@@ -34,12 +36,12 @@ export default function AccountOptions({ user, toastRef, setReloadUser }) {
                 iconColorLeft: "#a7bfd3",
                 iconNameRight: "chevron-right",
                 iconColorRight: "#a7bfd3",
-                onPress: () => selectedComponent("password") 
+                onPress: () => selectedComponent("password")
             }
         ]
     }
-
-    const selectedComponent = (key) =>{
+    
+    const selectedComponent = (key) => {
         switch (key) {
             case "displayName":
                 setRenderComponent(
@@ -49,24 +51,32 @@ export default function AccountOptions({ user, toastRef, setReloadUser }) {
                         toastRef={toastRef}
                         setReloadUser={setReloadUser}
                     />
-                ) 
+                )
                 break;
             case "email":
                 setRenderComponent(
-                     <Text>email</Text>
-                    ) 
+                    <ChangeEmailForm
+                        email={user.email}
+                        setShowModal={setShowModal}
+                        toastRef={toastRef}
+                        setReloadUser={setReloadUser}
+                    />
+                )
                 break;
             case "password":
                 setRenderComponent(
-                    <Text>password</Text>
-                ) 
-                break;        
+                    <ChangePasswordForm
+                        setShowModal={setShowModal}
+                        toastRef={toastRef}
+                    />
+                )
+                break;
         }
         setShowModal(true)
     }
-
+    
     const menuOptions = generateOptions();
-   
+
     return (
         <View>
             {
@@ -94,17 +104,12 @@ export default function AccountOptions({ user, toastRef, setReloadUser }) {
             }
             <Modal isVisible={showModal} setVisible={setShowModal}>
                 {
-                    renderComponent 
-                }
-            </Modal>
+                    renderComponent
+                }    
+            </Modal> 
         </View>
     )
 }
-
-
-
-
-
 
 const styles = StyleSheet.create({
     menuItem: {

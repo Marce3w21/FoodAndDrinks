@@ -36,7 +36,7 @@ export default function UserLogged() {
                         <AccountOptions
                             user = {user}
                             toastRef={toastRef}
-                            setReloadUser={setReloadUser}
+                            setReloadUser={setReloadUser} 
                         />
                     </View>
                 )
