@@ -106,3 +106,76 @@ export const updatePassword = async(password) => {
     }
     return result
 }
+
+export const addDocumentWithoutId = async(collection, data) => {
+    const result = { statusResponse: true, error: null }
+    try {
+        await db.collection(collection).add(data)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+
+
+export const getProducts = async(limitProducts) => {
+    const result = { statusResponse: true, error: null, products: [], startProduct: null }
+    try {
+        const response = await db
+            .collection("products")
+            .orderBy("createAt", "desc")
+            .limit(limitProducts)
+            .get()
+        if (response.docs.length > 0){
+            result.startProduct = response.docs[response.docs.length - 1]
+        }
+        response.forEach((doc) => {
+            const product = doc.data()
+            product.id = doc.id
+            result.products.push(product)
+        })
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const getMoreProducts = async(limitProducts, startProduct) => {
+    const result = { statusResponse: true, error: null, products: [], startProducts: null }
+    try {
+        const response = await db
+            .collection("products")
+            .orderBy("createAt", "desc")
+            .startAfter(startProduct.data().createAt)
+            .limit(limitProducts)
+            .get()
+        if (response.docs.length > 0){
+            result.startProduct = response.docs[response.docs.length - 1]
+        }
+        response.forEach((doc) => {
+            const product = doc.data()
+            product.id = doc.id
+            result.products.push(product)
+        })
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const getDocumentById = async(collection, id) => {
+    const result = { statusResponse: true, error: null, document: null }
+    try {
+        const response = await db.collection(collection).doc(id).get()
+        result.document = response.data()
+        result.document.id =  response.id
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}

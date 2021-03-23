@@ -1,46 +1,154 @@
-import React, { useState } from 'react'
-import { StyleSheet, Text, View, ScrollView, Alert} from 'react-native'
-import { Avatar, Button, Icon, Input } from 'react-native-elements'
+import React, { useState, useEffect } from 'react'
+import { Alert, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Avatar, Button, Icon, Input, Image } from 'react-native-elements'
 import CountryPicker from 'react-native-country-picker-modal'
-import {Picker} from '@react-native-picker/picker'
-import {map, size, filter} from 'lodash'
+import { Picker } from '@react-native-picker/picker'
+import { map, size, filter, isEmpty } from 'lodash'
+import MapView from 'react-native-maps'
+import uuid from 'random-uuid-v4'
+import Modal from '../../components/Modal'
 
-import { loadImageFromGallery } from '../../utils/helpers'
+import { getCurrentLocation, loadImageFromGallery } from '../../utils/helpers'
+import { addDocumentWithoutId, getCurrentUser, uploadImage } from '../../utils/actions'
+
+const widthScreen = Dimensions.get("window").width
 
 export default function AddProductForm({ toastRef, setLoading, navigation }) {
     const [formData, setFormData] = useState(defaultFormValues())
-    const [errorNombreProducto, setErrorNombreProducto] = useState(null)
-    const [errorNombreRestaurante, setErrorNombreRestaurante] = useState(null)
-    const [errorClasificacion, setErrorClasificacion] = useState(null)
-    const [errorTipo, setErrorTipo] = useState(null)
-    const [errorFuente, setErrorFuente] = useState(null)
-    const [errorDireccion, setErrorDireccion] = useState(null)
-    const [errorTelefono, setErrorTelefono] = useState(null)
-    const [errorTipoAtencion, setErrorTipoAtencion] = useState(null)
-    const [errorDescripcion, setErrorDescripcion] = useState(null)
-    const [errorPrecio, setErrorPrecio] = useState(null)
+    const [errorNameProduct, setErrorNameProduct] = useState(null)
+    const [errorNameRestaurant, setErrorNameRestaurant] = useState(null)
+    const [errorClass, setErrorClass] = useState(null)
+    const [errorType, setErrorType] = useState(null)
+    const [errorFont, setErrorFont] = useState(null)
+    const [errorAddress, setErrorAddress] = useState(null)
+    const [errorPhone, setErrorPhone] = useState(null)
+    const [errorDescription, setErrorDescription] = useState(null)
+    const [errorPrice, setErrorPrice] = useState(null)
+    const [errorTypeAttention, setErrorTypeAttention] = useState(null)
     const [imagesSelected, setImagesSelected] = useState([])
+    const [isVisibleMap, setIsVisibleMap] = useState(false)
+    const [locationRestaurant, setLocationRestaurant] = useState(null)
 
-    const addProduct = () => {
-        console.log(formData)
-        console.log("ga")
+    const addProduct = async() => {
+        if(!validForm()){
+            return
+        }
+        setLoading(true)
+        const responseUploadImages = await uploadImages()
+        const product = {
+            nameProduct: formData.nameProduct,
+            nameRestaurant: formData.nameRestaurant,
+            class: formData.class,
+            typeProduct: formData.typeProduct,
+            font: formData.font,
+            address: formData.address,
+            location: locationRestaurant,
+            country: formData.country,
+            callingCode: formData.callingCode,
+            phone: formData.phone,
+            typeAttention: formData.typeAttention,
+            description: formData.description,
+            price: formData.price,
+            images: responseUploadImages,
+            rating: 0,
+            ratingTotal: 0,
+            quantityVoting: 0,
+            createAt: new Date(),
+            createBy: getCurrentUser().uid
+        }
+        const responseAddDocument = await addDocumentWithoutId("products", product)
+        setLoading(false)
+
+        if(!responseAddDocument.statusResponse){
+            toastRef.current.show("Error al grabar el producto/restaurante, por favor intenta mas tarde.", 3000)
+            return
+        }
+
+        navigation.navigate("products")
+    }
+
+    const uploadImages = async() => {
+        const imagesUrl = []
+        await Promise.all(
+            map(imagesSelected, async(image) => {
+                const response = await uploadImage(image, "products", uuid())
+                if(response.statusResponse){
+                    imagesUrl.push(response.url)
+                }
+            })
+        )
+        return imagesUrl
+    }
+
+    const validForm = () => {
+        clearErrors()
+        let isValid = true
+
+        if(isEmpty(formData.nameProduct)){
+            setErrorNameProduct("Debes ingresar el nombre del producto.")
+            isValid = false
+        }
+
+        if(isEmpty(formData.nameRestaurant)){
+            setErrorNameRestaurant("Debes ingresar el nombre del restaurante.")
+            isValid = false
+        }
+
+        if(isEmpty(formData.address)){
+            setErrorAddress("Debes ingresar la direccion del restaurante.")
+            isValid = false
+        }
+
+        if(size(formData.phone) < 9){
+            setErrorPhone("Debes ingresar el telefono del restaurante.")
+            isValid = false
+        }
+
+        if(isEmpty(formData.description)){
+            setErrorDescription("Debes ingresar la descripcion del restaurante/producto.")
+            isValid = false
+        }
+
+        if(isEmpty(formData.price)){
+            setErrorPrice("Debes ingresar el precio del producto.")
+            isValid = false
+        }
+
+        if(!locationRestaurant){
+            toastRef.current.show("Debes de localizar el restaurante en el mapa.", 3000)
+        } else if(size(imagesSelected) === 0) {
+            toastRef.current.show("Debes de agregar al menos una imagen para el restaurante/producto.", 3000)
+            isValid = false
+        }
+
+        return isValid
+    }
+
+    const clearErrors = () => {
+        setErrorDescription(null)
+        setErrorNameProduct(null)
+        setErrorNameRestaurant(null)
+        setErrorPhone(null)
+        setErrorAddress(null)
+        setErrorPrice(null)
     }
 
     return (
-        <View style={styles.viewContainer}>
+        <ScrollView style={styles.viewContainer}>
+            <ImageProduct
+                imageProduct={imagesSelected[0]}
+            />
             <FormAdd
                 formData={formData}
                 setFormData={setFormData}
-                errorNombreProducto={errorNombreProducto}
-                errorNombreRestaurante={errorNombreRestaurante}
-                errorClasificacion={errorClasificacion}
-                errorTipo={errorTipo}
-                errorFuente={errorFuente}
-                errorDireccion={errorDireccion}
-                errorTelefono={errorTelefono}
-                errorTipoAtencion={errorTipoAtencion}
-                errorDescripcion={errorDescripcion}
-                errorPrecio={errorPrecio}
+                errorNameProduct={errorNameProduct}
+                errorNameRestaurant={errorNameRestaurant}
+                errorAddress={errorAddress}
+                errorPhone={errorPhone}
+                errorDescription={errorDescription}
+                errorPrice={errorPrice}
+                setIsVisibleMap={setIsVisibleMap}
+                locationRestaurant={locationRestaurant}
             />
             <UploadImage
                 toastRef={toastRef}
@@ -51,6 +159,86 @@ export default function AddProductForm({ toastRef, setLoading, navigation }) {
                 title="Crear Producto"
                 onPress={addProduct}
                 buttonStyle={styles.btnAddProduct}
+            />
+            <MapRestaurant
+                isVisibleMap={isVisibleMap}
+                setIsVisibleMap={setIsVisibleMap}
+                locationRestaurant={locationRestaurant}
+                setLocationRestaurant={setLocationRestaurant}
+                toastRef={toastRef}
+            />
+        </ScrollView>
+    )
+}
+
+function MapRestaurant({ isVisibleMap, setIsVisibleMap, setLocationRestaurant, toastRef }) {
+    const [newRegion, setNewRegion] = useState(null)
+
+    useEffect(() => {
+        (async() => {
+            const response = await getCurrentLocation()
+            if(response.status) {
+                setNewRegion(response.location)
+            }
+        })()
+    }, [])
+
+    const confirmLocation = () => {
+        setLocationRestaurant(newRegion)
+        toastRef.current.show("Localizacion guardada correctamente.", 3000)
+        setIsVisibleMap(false)
+    }
+    
+    return (
+        <Modal isVisible={isVisibleMap} setIsVisible={setIsVisibleMap}>
+            <View>
+                {
+                    newRegion && (
+                        <MapView
+                            style={styles.mapStyle}
+                            initialRegion={newRegion}
+                            showsUserLocation={true}
+                            onRegionChange={(region) => setNewRegion(region)}
+                        >
+                            <MapView.Marker
+                                coordinate={{
+                                    latitude: newRegion.latitude,
+                                    longitude: newRegion.longitude
+                                }}
+                                draggable
+                            />
+                        </MapView>
+                    )
+                }
+                <View style={styles.viewMapBtn}>
+                    <Button
+                        title="Guardar Ubicacion"
+                        containerStyle={styles.viewMapBtnContainerSave}
+                        buttonStyle={styles.viewMapBtnSave}
+                        onPress={confirmLocation}
+                    />
+                    <Button
+                        title="Cancelar Ubicacion"
+                        containerStyle={styles.viewMapBtnContainerCancel}
+                        buttonStyle={styles.viewMapBtnCancel}
+                        onPress={() => setIsVisibleMap(false)}
+                    />
+                </View>
+            </View>
+        </Modal>
+    )
+}
+
+function ImageProduct({ imageProduct }) {
+    return (
+        <View style={styles.viewPhoto}>
+            <Image
+                style={{ width: widthScreen, height: 200}}
+                source={
+                    imageProduct
+                        ? { uri: imageProduct}
+                        : require("../../assets/no-image.png")
+                }
             />
         </View>
     )
@@ -65,15 +253,14 @@ function UploadImage({ toastRef, imagesSelected, setImagesSelected }) {
         }
         setImagesSelected([...imagesSelected, response.image])
     }
-
     const removeImage = (image) => {
         Alert.alert(
             "Eliminar Imagen",
-            "¿Estas seguro que quieres eliminar la imagen?",
+            "¿Estas seguro que deseas eliminar la imagen?",
             [
                 {
-                    text:   "No",
-                    style: "cancel"    
+                    text: "No",
+                    style: "cancel"
                 },
                 {
                     text: "Si",
@@ -86,10 +273,11 @@ function UploadImage({ toastRef, imagesSelected, setImagesSelected }) {
             ],
             {
                 cancelable: true
+                //canelable
             }
-
         )
     }
+
     return (
         <ScrollView
             horizontal
@@ -107,22 +295,22 @@ function UploadImage({ toastRef, imagesSelected, setImagesSelected }) {
                 )
             }
             {
-                map(imagesSelected, (imageRestaurant, index) => (
+                map(imagesSelected, (imageProduct, index) => (
                     <Avatar
                         key={index}
                         style={styles.miniatureStyle}
-                        source={{uri: imageRestaurant}}
-                        onPress={() => removeImage(imageRestaurant)}
+                        source={{uri: imageProduct}}
+                        onPress={() => removeImage(imageProduct)}
+
                     />
                 ))
             }
-            
+
         </ScrollView>
     )
 }
 
-function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaurante, errorClasificacion,
-    errorTipo, errorFuente, errorDireccion, errorTelefono, errorTipoAtencion, errorDescripcion, errorPrecio  }){
+function FormAdd({ formData, setFormData, errorNameProduct, errorNameRestaurant, errorAddress, errorPhone, errorDescription, errorPrice, setIsVisibleMap, locationRestaurant }){
     const [country, setCountry] = useState("PE")
     const [callingCode, setCallingCode] = useState("51")
     const [phone, setPhone] = useState("")
@@ -131,40 +319,40 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
     const [selectedFont, setSelectedFont] = useState("")
     const [selectedAttentionType, setSelectedAttentionType] = useState("")
 
-    const onChange =(e, type ) => {
-        setFormData({...formData, [type] : e.nativeEvent.text })
+    const onChange= (e, type) => {
+        setFormData({ ...formData, [type] : e.nativeEvent.text })
     }
 
     return (
         <View style={styles.viewForm}>
             <Input
                 placeholder="Nombre del producto."
-                defaultValue= {formData.nombreProducto}
-                onChange = {(e) => onChange(e, "nombreProducto")}
-                errorMessage ={errorNombreProducto}
+                defaultValue={formData.nameProduct}
+                onChange={(e) => onChange(e, "nameProduct")}
+                errorMessage={errorNameProduct}
 
             />
             <Input
                 placeholder="Nombre del restaurante."
-                defaultValue= {formData.nombreRestaurante}
-                onChange = {(e) => onChange(e, "nombreRestaurante")}
-                errorMessage ={errorNombreRestaurante}
+                defaultValue={formData.nameRestaurant}
+                onChange={(e) => onChange(e, "nameRestaurant")}
+                errorMessage={errorNameRestaurant}
                 
             />
             <Picker
                 selectedValue={selectedClass}
                 style={styles.pickerClass}
-                onValueChange={(itemValue) => {
-                    setSelectedClass(itemValue)
-                    setFormData({
-                        ...formData,
-                        "clasificacion": itemValue
-                    })
-            }}
-
+                onValueChange={(itemValue) =>{
+                   setSelectedClass(itemValue)
+                   setFormData({
+                        ...formData, 
+                        "class": itemValue
+                })   
+                }}
             >
-                <Picker.Item label="Comida" value="comida"/>
-                <Picker.Item label="Bebida" value="bebida"/>
+                <Picker.Item label="Seleccione una opcion." value="option"/>
+                <Picker.Item label="Comida" value="Comida"/>
+                <Picker.Item label="Bebida" value="Bebida"/>
                 
             </Picker>
             {/* <Input
@@ -174,20 +362,21 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
             <Picker
                 selectedValue={selectedType}
                 style={styles.pickerClass}
-                onValueChange={(itemValue) => {
+                onValueChange={(itemValue) =>{
                     setSelectedType(itemValue)
                     setFormData({
-                        ...formData,
-                        "tipo": itemValue
-                    })
+                        ...formData, 
+                        "typeProduct": itemValue 
+                    })    
             }}
             >
-                <Picker.Item label="Casero" value="casero"/>
-                <Picker.Item label="Restaurante" value="restaurante"/>
-                <Picker.Item label="Quinta" value="quinta"/>
-                <Picker.Item label="Tipica" value="tipica"/>
-                <Picker.Item label="Extravagante" value="extravagante"/>
-                <Picker.Item label="Vegana" value="vegana"/>
+                <Picker.Item label="Seleccione una opcion." value="option"/>
+                <Picker.Item label="Casero" value="Casero"/>
+                <Picker.Item label="Restaurante" value="Restaurante"/>
+                <Picker.Item label="Quinta" value="Quinta"/>
+                <Picker.Item label="Tipica" value="Tipica"/>
+                <Picker.Item label="Extravagante" value="Extravagante"/>
+                <Picker.Item label="Vegana" value="Vegana"/>
                 
             </Picker>
             {/* <Input
@@ -198,20 +387,25 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
                 selectedValue={selectedFont}
                 style={styles.pickerClass}
                 onValueChange={(itemValue) =>{
-                   setSelectedFont(itemValue)
-                   setFormData({
-                       ...formData,
-                       "fuente": itemValue
-                   }) 
-            }}
+                    setSelectedFont(itemValue)
+                    setFormData({
+                        ...formData,
+                        "font": itemValue
+                    }) 
+                }
+            }
             >
+                <Picker.Item label="Seleccione una opcion." value="option"/>
                 <Picker.Item label="Mariscos" value="Mariscos"/>
                 <Picker.Item label="Pescado" value="Pescado"/>
                 <Picker.Item label="Carnes" value="Carnes"/>
                 <Picker.Item label="Pollo" value="Pollo"/>
                 <Picker.Item label="Cerdo" value="Cerdo"/>
-                <Picker.Item label="Vegetariana" value="Vegetariana"/>
+                <Picker.Item label="Vegetales" value="Vegetales"/>
                 <Picker.Item label="Pavo" value="Pavo"/>
+                <Picker.Item label="Buffet" value="Buffet"/>
+                <Picker.Item label="Pizza" value="Pizza"/>
+                <Picker.Item label="Sopas" value="Sopas"/>
                 <Picker.Item label="Bebidas calientes" value="Bebidas calientes"/>
                 <Picker.Item label="Bebidas frias" value="Bebidas frias"/>
                 <Picker.Item label="Bebidas alcoholicas" value="Bebidas alcoholicas"/>
@@ -224,10 +418,15 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
             /> */}
             <Input
                 placeholder="Direccion del restaurante."
-                defaultValue= {formData.direccion}
-                onChange = {(e) => onChange(e, "direccion")}
-                errorMessage ={errorDireccion}
-                multiline
+                defaultValue={formData.address}
+                onChange={(e) => onChange(e, "address")}
+                errorMessage={errorAddress}
+                rightIcon={{
+                    type: "material-community",
+                    name: "google-maps",
+                    color: locationRestaurant ? "#721c1c" : "#c2c2c2",
+                    onPress: () => setIsVisibleMap(true)           }
+                }
                 
             />
             <View style={styles.phoneView}>
@@ -242,7 +441,8 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
                         setFormData({
                             ...formData, 
                             "country": country.cca2, 
-                            "callingCode": country.callingCode[0]})
+                            "callingCode": country.callingCode[0] 
+                        })
                         setCountry(country.cca2)
                         setCallingCode(country.callingCode[0])
                     }}
@@ -251,9 +451,9 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
                     placeholder="Numero del restaurante."
                     keyboardType="phone-pad"
                     containerStyle={styles.inputPhone}
-                    defaultValue= {formData.telefono}
-                    onChange = {(e) => onChange(e, "telefono")}
-                    errorMessage ={errorTelefono}
+                    defaultValue={formData.phone}
+                    onChange={(e) => onChange(e, "phone")}
+                    errorMessage={errorPhone}
                 />
             </View>
             <Picker
@@ -263,13 +463,15 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
                     setSelectedAttentionType(itemValue)
                     setFormData({
                         ...formData,
-                        "tipoAtencion" : itemValue
+                        "typeAttention": itemValue
                     })
-            }}
+                }
+            }
             >
-                <Picker.Item label="Delivery" value="delivery"/>
-                <Picker.Item label="Consumo en local" value="consumolocal"/>
-                <Picker.Item label="Recojo en local" value="recojolocal"/>
+                <Picker.Item label="Seleccione una opcion." value="option"/>
+                <Picker.Item label="Delivery" value="Delivery"/>
+                <Picker.Item label="Consumo en local" value="Consumo en local"/>
+                <Picker.Item label="Recojo en local" value="Recojo en local"/>
             </Picker>
             {/* <Input
                 placeholder="Tipo de atencion."
@@ -277,42 +479,38 @@ function FormAdd({formData, setFormData, errorNombreProducto, errorNombreRestaur
             /> */}
             <Input
                 placeholder="Descripcion del producto."
-                defaultValue= {formData.descripcion}
-                onChange = {(e) => onChange(e, "descripcion")}
-                errorMessage ={errorDescripcion}
-
                 multiline
                 containerStyle={styles.textArea}
+                defaultValue={formData.description}
+                onChange={(e) => onChange(e, "description")}
+                errorMessage={errorDescription}
                 
             />
             <Input
                 placeholder="Precio del producto."
-                defaultValue= {formData.precio}
-                onChange = {(e) => onChange(e, "precio")}
-                errorMessage ={errorPrecio}
                 keyboardType="phone-pad"
-                
+                defaultValue={formData.price}
+                onChange={(e) => onChange(e, "price")}
+                errorMessage={errorPrice}
             />
         </View>
     )
 }
 
 const defaultFormValues = () => {
-    return {
-        nombreProducto: "",
-        nombreRestaurante: "",
-        clasificacion: "",
-        tipo: "",
-        fuente: "",
-        direccion: "",
-        telefono: "",
+    return{
+        nameProduct: "",
+        nameRestaurant: "",
+        class: "",
+        typeProduct: "",
+        font: "",
+        address: "",
         country: "PE",
         callingCode: "51",
-        tipoAtencion: "",
-        descripcion :"",
-        precio: ""
-
-
+        phone: "",
+        typeAttention: "",
+        description: "",
+        price: ""
     }
 }
 
@@ -356,13 +554,38 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginRight: 10,
         height: 70,
-        width: 79,
+        width: 70,
         backgroundColor: "#e3e3e3"
     },
     miniatureStyle: {
-        width: 60,
+        width: 70,
         height: 70,
         marginRight: 10
+    },
+    viewPhoto: {
+        alignItems: "center",
+        height: 200,
+        marginBottom: 20
+    },
+    mapStyle: {
+        width: "100%",
+        height: 550
+    },
+    viewMapBtn: {
+        flexDirection: "row",
+        justifyContent: "center",
+        marginTop: 10
+    },
+    viewMapBtnContainerSave: {
+        paddingRight: 5
+    },
+    viewMapBtnContainerCancel: {
+        paddingLeft: 5
+    },
+    viewMapBtnSave: {
+        backgroundColor: "#442484"
+    }, 
+    viewMapBtnCancel: {
+        backgroundColor: "#721c1c"
     }
-
 })
