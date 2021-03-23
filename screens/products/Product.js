@@ -1,11 +1,14 @@
 import React, {useState, useEffect } from 'react'
 import { Alert, Dimensions, StyleSheet, Text, ScrollView } from 'react-native'
 import CarouselImages from '../../components/CarouselImages'
-import { Rating } from 'react-native-elements'
+import { ListItem, Rating, Icon } from 'react-native-elements'
 
 import Loading from '../../components/Loading'
 import { getDocumentById } from '../../utils/actions'
 import { View } from 'react-native'
+import { formatPhone } from '../../utils/helpers'
+import MapProduct from '../../components/products/MapProduct'
+import { map } from 'lodash'
 
 const widthScreen = Dimensions.get("window").width
 
@@ -47,8 +50,61 @@ export default function Product({navigation, route}) {
                 rating={product.rating}
             
             />
+            <ProductInfo
+                nameProduct={product.nameProduct}
+                nameRestaurant={product.nameRestaurant}
+                classs={product.class}
+                typeProduct={product.typeProduct}
+                font={product.font}
+                location={product.location}
+                address={product.address}
+                phone={formatPhone(product.callingCode, product.phone)}
+                typeAttention={product.typeAttention}
+                description={product.description}
+                price={product.price}
+
+
+            />
         </ScrollView>
     )
+}
+
+function ProductInfo({ nameProduct, nameRestaurant, classs, typeProduct, font, location, address, phone,
+typeAttention, description, price }) {
+    const listInfo = [
+        { text: address, iconName: "map-marker"},
+        { text: phone, iconName: "phone"},
+    ]
+    return (
+        <View style={styles.viewProductInfo}>
+            <Text style={styles.productInfoTitle}>
+                Informacion sobre el restaurante
+             </Text>
+            <MapProduct
+                location={location}
+                nameProduct={nameProduct}
+                height={150}
+            />
+            {
+                map(listInfo, (item, index) => (
+                    <ListItem
+                        key={index}
+                        style={styles.containerListItem}
+                    >
+                        <Icon
+                            type="material-community"
+                            name={item.iconName}
+                            color="#721c1c"
+                        />
+                        <ListItem.Content>
+                            <ListItem.Title>{item.text}</ListItem.Title>
+                        </ListItem.Content>
+                    </ListItem>
+                ))
+            }
+        </View>
+    )                            
+
 }
 
 function TitleProduct({nameProduct, description, rating}) {
@@ -67,6 +123,8 @@ function TitleProduct({nameProduct, description, rating}) {
         </View>
     )
 }
+
+
 
 const styles = StyleSheet.create({
     viewBody: {
@@ -89,7 +147,21 @@ const styles = StyleSheet.create({
         right: 0
     },
     nameProduct2: {
-        fontWeight: "bold"
+        fontWeight: "bold",
+        marginRight: 85
+    },
+    viewProductInfo: {
+        margin: 15,
+        marginTop: 25
+    },
+    productInfoTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 15
+    },
+    containerListItem: {
+        borderBottomColor: "#721c1c",
+        borderBottomWidth: 1
     }
 
 })
