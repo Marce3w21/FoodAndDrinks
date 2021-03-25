@@ -1,20 +1,20 @@
 import React from 'react'
-import { Image } from 'react-native-elements'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
-import Carousel, {Pagination} from 'react-native-snap-carousel'
+import { Image } from 'react-native-elements'
+import Carousel, { Pagination } from 'react-native-snap-carousel'
 import { size } from 'lodash'
-
 
 export default function CarouselImages({ images, height, width, activeSlide, setActiveSlide }) {
     const renderItem = ({ item }) => {
         return (
             <Image
                 style={{ width, height }}
-                PlaceholderContent={<ActivityIndicator color="#fff"/>}
+                PlaceholderContent={<ActivityIndicator color="#fff" />}
                 source={{ uri: item }}
             />
         )
     }
+
     return (
         <View>
             <Carousel
@@ -31,7 +31,7 @@ export default function CarouselImages({ images, height, width, activeSlide, set
     )
 }
 
-function MyPagination ({data, activeSlide}) {
+function MyPagination({ data, activeSlide }){
     return (
         <Pagination
             dotsLength={size(data)}
@@ -42,7 +42,6 @@ function MyPagination ({data, activeSlide}) {
             inactiveDotOpacity={0.6}
             inactiveDotScale={0.6}
         />
-        
     )
 }
 

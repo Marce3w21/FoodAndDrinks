@@ -1,40 +1,94 @@
-import React, {useState, useEffect } from 'react'
-import { Alert, Dimensions, StyleSheet, Text, ScrollView } from 'react-native'
-import CarouselImages from '../../components/CarouselImages'
-import { ListItem, Rating, Icon } from 'react-native-elements'
-
-import Loading from '../../components/Loading'
-import { getDocumentById } from '../../utils/actions'
-import { View } from 'react-native'
-import { formatPhone } from '../../utils/helpers'
-import MapProduct from '../../components/products/MapProduct'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { ScrollView, Alert, Dimensions, StyleSheet, Text, View } from 'react-native'
+import { Icon, ListItem, Rating } from 'react-native-elements'
 import { map } from 'lodash'
+import { useFocusEffect } from '@react-navigation/native'
+import firebase from 'firebase/app'
+import Toast from 'react-native-easy-toast'
+
+import CarouselImages from '../../components/CarouselImages'
+import Loading from '../../components/Loading'
+import MapRestaurant from '../../components/products/MapRestaurant'
+import { addDocumentWithoutId, getCurrentUser, getDocumentById, getIsFavorite, deleteFavorite } from '../../utils/actions'
+import { formatPhone } from '../../utils/helpers'
+import ListReviews from '../../components/products/ListReviews'
 
 const widthScreen = Dimensions.get("window").width
 
-export default function Product({navigation, route}) {
-    const { id, nameProduct} = route.params
+export default function Product({ navigation, route }) {
+    const { id, nameProduct } = route.params
+    const toastRef =useRef()
+
     const [product, setProduct] = useState(null)
     const [activeSlide, setActiveSlide] = useState(0)
+    const [isFavorite, setIsFavorite] = useState(false)
+    const [userLogged, setUserLogged] = useState(false)
+    const [loading, setLoading] = useState(false)
+    
+    firebase.auth().onAuthStateChanged(user => {
+        user ? setUserLogged(true) : setUserLogged(false)
+    })
 
-    navigation.setOptions({ title:nameProduct })
+    navigation.setOptions({ title: nameProduct })
+
+    useFocusEffect(
+        useCallback(() => {
+            (async() => {
+                const response = await getDocumentById("products", id)
+                if (response.statusResponse) {
+                    setProduct(response.document)
+                } else {
+                    setProduct({})
+                    Alert.alert("Ocurrio un problema cargando la opcion escogida.")
+                }
+            })()
+        }, [])
+    )
 
     useEffect(() => {
         (async() => {
-            const response = await getDocumentById("products", id)
-            if (response.statusResponse) {
-                setProduct(response.document)
-            } else {
-                setProduct({})
-                Alert.alert("Ocurrio un problema cargando el producto")
+            if (userLogged && product) {
+                const response = await getIsFavorite(product.id)
+                response.statusResponse && setIsFavorite(response.isFavorite)
             }
         })()
-    }, [])
+     }, [userLogged, product])
 
-    if (!product) {
-        return <Loading isVisible={true} text="Cargando..."/>
+    const addFavorite = async() => {
+        if (!userLogged) {
+            toastRef.current.show("Para agregar el producto a favoritos debes estar logueado", 3000)
+            return
+        }
+            setLoading(true)
+            const response = await addDocumentWithoutId("favorites", {
+                idUser: getCurrentUser().uid,
+                idProduct:product.id
+            })
+            setLoading(false)
+            if (response.statusResponse){
+                setIsFavorite(true)
+                toastRef.current.show("Producto añadido a favoritos", 3000)
+            } else {
+                toastRef.current.show("No se pudo adicionar el producto a favoritos. Por favor intenta mas tarde", 3000)
+            }
     }
 
+    const removeFavorite = async() => {
+        setLoading(true)
+        const response = await deleteFavorite(product.id)
+        setLoading(false)
+
+        if (response.statusResponse){
+            setIsFavorite(false)
+            toastRef.current.show("Producto eliminado de favoritos", 3000)
+        } else {
+            toastRef.current.show("No se pudo eliminar el producto a favoritos. Por favor intenta mas tarde", 3000)
+        }
+    }
+
+    if (!product){
+        return <Loading isVisible={true} text="Cargando..."/>
+    }
     return (
         <ScrollView style={styles.viewBody}>
             <CarouselImages
@@ -44,45 +98,61 @@ export default function Product({navigation, route}) {
                 activeSlide={activeSlide}
                 setActiveSlide={setActiveSlide}
             />
+            <View style={styles.viewFavorite}>
+                <Icon
+                    type="material-community"
+                    name={ isFavorite ? "heart" : "heart-outline"}
+                    onPress={ isFavorite ? removeFavorite : addFavorite }
+                    color={"#721c1c"}
+                    size={35}
+                    underlayColor="transparent"
+                />
+
+            </View>
             <TitleProduct
                 nameProduct={product.nameProduct}
+                nameRestaurant={product.nameRestaurant}
                 description={product.description}
                 rating={product.rating}
-            
             />
-            <ProductInfo
+            <RestaurantInfo
                 nameProduct={product.nameProduct}
-                nameRestaurant={product.nameRestaurant}
-                classs={product.class}
                 typeProduct={product.typeProduct}
                 font={product.font}
                 location={product.location}
                 address={product.address}
-                phone={formatPhone(product.callingCode, product.phone)}
                 typeAttention={product.typeAttention}
-                description={product.description}
                 price={product.price}
-
-
+                phone={formatPhone(product.callingCode, product.phone)}
             />
+            <ListReviews
+                navigation={navigation}
+                idProduct={product.id}
+            />
+            <Toast ref={toastRef} position="center" opacity={0.9}/>
+            <Loading isVisible={loading} text="Por favor espere..."/>
         </ScrollView>
     )
 }
 
-function ProductInfo({ nameProduct, nameRestaurant, classs, typeProduct, font, location, address, phone,
-typeAttention, description, price }) {
+function RestaurantInfo({ nameProduct, typeProduct, 
+    font, location, address, typeAttention, price, phone }) {
     const listInfo = [
-        { text: address, iconName: "map-marker"},
-        { text: phone, iconName: "phone"},
+        {text: address, iconName: "map-marker"},
+        {text: phone, iconName: "phone"},
+        {text: typeProduct, iconName: "store"},
+        {text: font, iconName: "food-variant"},
+        {text: typeAttention, iconName: "table-chair"},
+        {text: "S/."+price+".00", iconName: "cash-multiple"}
     ]
     return (
-        <View style={styles.viewProductInfo}>
-            <Text style={styles.productInfoTitle}>
+        <View style={styles.viewRestaurantInfo}>
+            <Text style={styles.RestaurantInfoTitle}>
                 Informacion sobre el restaurante
-             </Text>
-            <MapProduct
+            </Text>
+            <MapRestaurant
                 location={location}
-                nameProduct={nameProduct}
+                name={nameProduct}
                 height={150}
             />
             {
@@ -103,42 +173,45 @@ typeAttention, description, price }) {
                 ))
             }
         </View>
-    )                            
-
+    )
 }
 
-function TitleProduct({nameProduct, description, rating}) {
-    return (
-        <View style={styles.viewProductTitle}>
+function TitleProduct({ nameProduct, nameRestaurant, description, rating }){
+    return(
+        <View style={styles.viewProductTtitle}>
             <View style={styles.viewProductContainer}>
-                <Text style={styles.nameProduct2}>{nameProduct}</Text>
+                <Text style={styles.nameProduct}>{nameProduct}</Text>
                 <Rating
-                   style={styles.rating}
-                   imageSize={20}
-                  readonly
-                  startingValue={parseFloat(rating)}
-            />
+                    style={styles.rating}
+                    imageSize={20}
+                    readonly
+                    startingValue={parseFloat(rating)}
+                /> 
             </View>
+            <Text style={styles.descriptionRest}>{nameRestaurant}</Text>
             <Text style={styles.descriptionProduct}>{description}</Text>
         </View>
     )
 }
-
-
 
 const styles = StyleSheet.create({
     viewBody: {
         flex: 1,
         backgroundColor: "#fff"
     },
-    viewProductTitle: {
-        padding: 15,  
+    viewProductTtitle: {
+        padding: 15
     },
     viewProductContainer: {
         flexDirection: "row"
     },
+    descriptionRest: {
+        marginTop: 4,
+        color: "black",
+        textAlign: "justify"
+    },
     descriptionProduct: {
-        marginTop: 8,
+        marginTop: 4,
         color: "gray",
         textAlign: "justify"
     },
@@ -146,15 +219,16 @@ const styles = StyleSheet.create({
         position: "absolute",
         right: 0
     },
-    nameProduct2: {
+    nameProduct: {
         fontWeight: "bold",
-        marginRight: 85
+        marginRight: 95,
+        fontSize: 15
     },
-    viewProductInfo: {
+    viewRestaurantInfo: {
         margin: 15,
-        marginTop: 25
+        marginTop: 12
     },
-    productInfoTitle: {
+    RestaurantInfoTitle: {
         fontSize: 20,
         fontWeight: "bold",
         marginBottom: 15
@@ -162,6 +236,15 @@ const styles = StyleSheet.create({
     containerListItem: {
         borderBottomColor: "#721c1c",
         borderBottomWidth: 1
-    }
+    },
+    viewFavorite: {
+        position: "absolute",
+        top: 0,
+        right: 0,
+        backgroundColor: "#fff",
+        borderBottomLeftRadius: 100,
+        padding: 5,
+        paddingLeft: 15
 
+    }
 })

@@ -28,7 +28,7 @@ export default function Products({ navigation }) {
 
     useFocusEffect(
         useCallback(() => {
-            async function getData() {
+            async function getData(){
                 setLoading(true)
                 const response = await getProducts(limitProducts)
                 if (response.statusResponse) {
@@ -38,8 +38,7 @@ export default function Products({ navigation }) {
                 setLoading(false)
             }
             getData()
-            },[],
-        )
+            },[])
     )
 
     const handleLoadMore = async() => {
