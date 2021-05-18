@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "617202629765",
+    "project_id": "foodanddrinks-581b2",
+    "storage_bucket": "foodanddrinks-581b2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:617202629765:android:df3b05eb2cc07ab149fdec",
+        "android_client_info": {
+          "package_name": "com.cuscofoodandrinks"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "617202629765-449ed176u5b110v84ochuddvkkqu1vjv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDR4_7mhKV8-dymOYVA_Xwss9kZjDaFfwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "617202629765-449ed176u5b110v84ochuddvkkqu1vjv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "617202629765-qu4g8l1r22l2mi8ml7q31nr2v53bba6f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cuscofoodandrinks"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

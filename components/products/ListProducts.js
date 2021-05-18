@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     },
     viewText: {
         flex: 1,
-        borderBottomColor: "#721c1c",
+        borderBottomColor: "#ff2020",
         borderBottomWidth: 1
     },
     imageRestaurant: {

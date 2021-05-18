@@ -34,9 +34,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 30
     },
     image :{
-        height: 270,
+        height: 300,
         width: "100%",
-        marginBottom: 10,
+        marginBottom: 1,
+        marginTop: 10
     },
     title :{
         fontWeight: "bold",
@@ -47,9 +48,11 @@ const styles = StyleSheet.create({
     description: {
         textAlign:"center",
         marginBottom: 20,
-        color: "#a65273"
+        color: "#7c6262"
     },
     button :{
-        backgroundColor: "#721c1c"
+        backgroundColor: "#ff2020"
+        //#ff2020 actual
+        //#721c1c antiguo
     }
 })

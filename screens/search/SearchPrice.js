@@ -3,11 +3,20 @@ import { ScrollView, StyleSheet, Text, View, FlatList, ActivityIndicator } from 
 import { SearchBar, ListItem, Icon, Image } from 'react-native-elements'
 import { isEmpty, size } from 'lodash'
 
-import { searchProducts } from '../utils/actions'
+import MultiSlider from '@ptomasroos/react-native-multi-slider'
+import { Platform } from 'react-native'
+import "prop-types";
 
-export default function Search({ navigation }) {
+import { searchPrice } from '../../utils/actions'
+
+
+
+
+export default function SearchPrice({ navigation }) {
     const [search, setSearch] = useState("")
     const [products, setProducts] = useState([])
+
+    
 
     useEffect(() => {
         if (isEmpty(search)) {
@@ -15,7 +24,7 @@ export default function Search({ navigation }) {
         }
 
         async function getData() {
-            const response = await searchProducts(search)
+            const response = await searchPrice(search)
             if (response.statusResponse) {
                 setProducts(response.products)
             }
@@ -23,13 +32,22 @@ export default function Search({ navigation }) {
         getData();
     }, [search])
 
+
     return (
         <ScrollView>
+
+
+        <MultiSlider
+        
+
+      />
+
             <SearchBar
-                placeholder="Ingrese el nombre del producto..."
+                placeholder="Ingrese el tipo de comida que busques..."
                 onChangeText={(e) => setSearch(e)}
                 containerStyle={styles.searchBar}
                 value={search}
+                keyboardType="numeric"
             />
             {
                 size(products) > 0 ? (
@@ -46,12 +64,15 @@ export default function Search({ navigation }) {
                 ) : (
                     isEmpty(search) ? (
                         <Text style={styles.notFound}>
-                            Ingrese las primeras letras del nombre del producto.{"\n"}
+                            Saabemos que el precio es un tema muy importante, pero no dejes que
+                            el hambre te gane. Ingresa un valor, y los productos con precios menores o iguales a
+                            ello se te mostraran en pantalla. ¡Disfruta tu comida/bebida!{"\n"}
+                            
                         </Text>
 
                     ) : (
                         <Text style={styles.notFound}>
-                            No hay restaurantes que coincidan con el criterio de busqueda.
+                            No hay productos que coincidan con el criterio de busqueda.
                         </Text>
                     )
                 )
@@ -60,8 +81,10 @@ export default function Search({ navigation }) {
     )
 }
 
+
+
 function Product({ product, navigation }) {
-    const { id, nameProduct, images } = product.item
+    const { id, nameProduct, images, price } = product.item
 
     return (
         <ListItem
@@ -78,6 +101,9 @@ function Product({ product, navigation }) {
                 style={styles.imageRestaurant}
             />
             <ListItem.Content>
+                <ListItem.Title style={{fontWeight: "bold"}}>
+                    S/.{price}.00
+                </ListItem.Title>
                 <ListItem.Title>
                     {nameProduct}
                 </ListItem.Title>
@@ -90,6 +116,7 @@ function Product({ product, navigation }) {
     )
 }
 
+
 const styles = StyleSheet.create({
     searchBar: {
         marginBottom: 8,
@@ -101,9 +128,15 @@ const styles = StyleSheet.create({
     },
     notFound: {
         alignSelf: "center",
-        width: "90%"
+        width: "90%",
+        textAlign: "justify"
     },
     menuItem: {
         margin: 10
     }
+
+    
+    
 })
+
+

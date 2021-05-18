@@ -17,9 +17,26 @@ export default function Login() {
            <View style={styles.container}>
                <LoginForm/>
                <CreateAccount/>
+               <RecoverPasswordFun/>
            </View>
            <Divider style={styles.divider}/>
        </KeyboardAwareScrollView>
+    )
+}
+
+function RecoverPasswordFun() {
+    const navigation = useNavigation()
+
+    return (
+        <Text
+            style={styles.register}
+            onPress={() => navigation.navigate("recover-password")}
+        >
+            ¿Olvidaste tu contraseña?{" "}
+        <Text style={styles.btnRegister}>
+            Recupérala
+        </Text>
+        </Text>
     )
 }
 
@@ -40,16 +57,17 @@ function CreateAccount(props){
 
 const styles = StyleSheet.create({
     image: {
-        height: 150,
+        height: 220,
         width: "100%",
-        marginBottom:20
+        marginBottom: 1,
+        marginTop: 15
     },
     container: {
         marginHorizontal: 40
     },
     divider: {
-        backgroundColor: "#721c1c",
-        margin: 40
+        backgroundColor: "#ff2020",
+        margin: 30
     },
     register:{
         marginTop: 15,
@@ -57,7 +75,7 @@ const styles = StyleSheet.create({
         alignSelf: "center"
     },
     btnRegister: {
-        color: "#721c1c",
+        color: "#ff2020",
         fontWeight: "bold"
     }
 })

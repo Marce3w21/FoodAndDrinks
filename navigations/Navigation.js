@@ -46,8 +46,8 @@ export default function Navigation() {
             <Tab.Navigator
                 initialRouteName="products"
                 tabBarOptions={{
-                    inactiveTintColor:"#e0bb62",
-                    activeTintColor:"#ec7c20"
+                    inactiveTintColor:"#e0ad40",
+                    activeTintColor:"#362a0f"
                 }}
                 screenOptions={({ route }) =>({
                     tabBarIcon: ({ color }) => screenOptions(route, color)
@@ -66,7 +66,7 @@ export default function Navigation() {
                 <Tab.Screen
                     name="top-products"
                     component={TopProductsStack}
-                    options={{ title: "Top 5" }}
+                    options={{ title: "Top 7" }}
                 />
                 <Tab.Screen
                     name="search"

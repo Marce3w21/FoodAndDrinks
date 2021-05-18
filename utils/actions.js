@@ -1,12 +1,19 @@
 import { firebaseApp } from './firebase'
 import firebase from 'firebase'
 import 'firebase/firestore'
+import { FireSQL } from 'firesql'
 require('firebase/firestore')
+
+import * as Notifications from 'expo-notifications'
+import Constants from 'expo-constants'
 
 import { fileToBlob } from './helpers'
 import { map } from 'lodash'
+import { Alert } from 'react-native'
+import { Platform } from 'react-native'
 
 const db = firebase.firestore(firebaseApp)
+const fireSQL = new FireSQL(firebase.firestore(), { includeId: "id" })
 
 export const isUserLogged = () =>{
     let isLogged = false
@@ -212,7 +219,7 @@ export const getRestaurantReviews = async(id) => {
 export const getIsFavorite = async(idProduct) => {
     const result = { statusResponse: true, error: null, isFavorite: false }
     try {
-         const response = await db
+        const response = await db
             .collection("favorites")
             .where("idProduct", "==", idProduct)
             .where("idUser", "==", getCurrentUser().uid)
@@ -228,7 +235,7 @@ export const getIsFavorite = async(idProduct) => {
 export const deleteFavorite = async(idProduct) => {
     const result = { statusResponse: true, error: null }
     try {
-         const response = await db
+        const response = await db
             .collection("favorites")
             .where("idProduct", "==", idProduct)
             .where("idUser", "==", getCurrentUser().uid)
@@ -236,7 +243,7 @@ export const deleteFavorite = async(idProduct) => {
         response.forEach(async(doc) => {
             const favoriteId = doc.id
             await db.collection("favorites").doc(favoriteId).delete()
-        })
+        })    
     } catch (error) {
         result.statusResponse = false
         result.error = error
@@ -247,20 +254,16 @@ export const deleteFavorite = async(idProduct) => {
 export const getFavorites = async() => {
     const result = { statusResponse: true, error: null, favorites: [] }
     try {
-         const response = await db
+        const response = await db
             .collection("favorites")
             .where("idUser", "==", getCurrentUser().uid)
             .get()
-        const productsId = []
-        response.forEach((doc) => {
-            const favorite = doc.data() 
-            productsId.push(favorite.idProduct)
-        })
         await Promise.all(
-            map(productsId, async(productId) =>{
-                const response2 = await getDocumentById("products", productId )
-                if (response2.statusResponse) {
-                    result.favorites.push(response2.document)
+            map(response.docs, async(doc) => {
+                const favorite = doc.data()
+                const product = await getDocumentById("products", favorite.idProduct)
+                if (product.statusResponse) {
+                    result.favorites.push(product.document)
                 }
             })
         )
@@ -269,4 +272,200 @@ export const getFavorites = async() => {
         result.error = error
     }
     return result     
+}
+
+export const getTopRestaurants = async(limit) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        const response = await db
+            .collection("products")
+            .orderBy("rating", "desc")
+            .limit(limit)
+            .get()
+        response.forEach((doc) => {
+            const product = doc.data()
+            product.id = doc.id
+            result.products.push(product)
+        })
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const searchProducts = async(criteria) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        result.products = await fireSQL.query(`SELECT * FROM products WHERE nameProduct LIKE '${criteria}%'`)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const searchRestaurants = async(criteria) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        result.products = await fireSQL.query(`SELECT * FROM products WHERE nameRestaurant LIKE '${criteria}%'`)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const searchFont = async(criteria) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        result.products = await fireSQL.query(`SELECT * FROM products WHERE font LIKE '${criteria}%'`)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const searchTypeAttention = async(criteria) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        result.products = await fireSQL.query(`SELECT * FROM products WHERE typeAttention LIKE '${criteria}%'`)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const searchPrice = async(criteria) => {
+    const result = { statusResponse: true, error: null, products: [] }
+    try {
+        result.products = await fireSQL.query(`SELECT * FROM products WHERE price <= '${criteria}'`)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+export const getToken = async() => {
+    if(!Constants.isDevice){
+        Alert.alert("Debes utilizar un dispositivo fisico para poder utilizar las notificaciones.")
+        return
+    }
+        
+    const { status: existingStatus } = await Notifications.getPermissionsAsync()
+    let finalStatus = existingStatus
+    if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync()
+        finalStatus = status
+    }
+
+    if (finalStatus !== "granted") {
+        Alert.alert("Debes dar permiso para acceder a las notificaciones.")
+        return
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data
+
+    if (Platform.OS == "android") {
+        Notifications.setNotificationChannelAsync("default", {
+            name: "default",
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: "#FF231F7C"
+        })
+    }
+
+    return token
+}
+
+export const addDocumentWithId = async(collection, data, doc) => {
+    const result = { statusResponse: true, error: null }
+    try {
+        await db.collection(collection).doc(doc).set(data)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result     
+}
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true
+    })
+ })
+
+ export const startNotifications = (notificationListener, responseListener) => {
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        console.log(notification)
+    })   
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(notification => {
+        console.log(notification)
+    })  
+    return () => {
+        Notifications.removeNotificationSubscription(notificationListener)
+        Notifications.removeNotificationSubscription(responseListener)
+    }
+ }
+
+ export const sendPushNotification = async(message) => {
+    let response = false
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    }).then(() => response = true)
+    return response
+}
+
+export const setNotificationMessage = (token, title, body, data) => {
+    const message = {
+        to: token,
+        sound: "default",
+        title: title,
+        body: body,
+        data: data
+    }
+  
+    return message
+}
+
+export const getUsersFavorite = async(productId) => {
+    const result = { statusResponse: true, error: null, users: [] }
+    try {
+        const response = await db.collection("favorites").where("idProduct", "==", productId).get()
+        await Promise.all(
+            map(response.docs, async(doc) => {
+                const favorite = doc.data()
+                const user = await getDocumentById("users", favorite.idUser)
+                if (user.statusResponse) {
+                    result.users.push(user.document)
+                }
+            })
+        )
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result
+}
+
+export const sendEmailResetPassword = async(email) => {
+    const result = { statusResponse: true, error: null }
+    try {
+        await firebase.auth().sendPasswordResetEmail(email)
+    } catch (error) {
+        result.statusResponse = false
+        result.error = error
+    }
+    return result
 }

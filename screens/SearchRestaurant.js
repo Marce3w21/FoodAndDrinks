@@ -3,11 +3,11 @@ import { ScrollView, StyleSheet, Text, View, FlatList, ActivityIndicator } from 
 import { SearchBar, ListItem, Icon, Image } from 'react-native-elements'
 import { isEmpty, size } from 'lodash'
 
-import { searchProducts } from '../utils/actions'
+import { searchRestaurants } from '../utils/actions'
 
-export default function Search({ navigation }) {
+export default function SearchRestaurant({ navigation }) {
     const [search, setSearch] = useState("")
-    const [products, setProducts] = useState([])
+    const [restaurants, setRestaurants] = useState([])
 
     useEffect(() => {
         if (isEmpty(search)) {
@@ -15,9 +15,9 @@ export default function Search({ navigation }) {
         }
 
         async function getData() {
-            const response = await searchProducts(search)
+            const response = await searchRestaurants(search)
             if (response.statusResponse) {
-                setProducts(response.products)
+                setRestaurants(response.products)
             }
         }
         getData();
@@ -26,19 +26,19 @@ export default function Search({ navigation }) {
     return (
         <ScrollView>
             <SearchBar
-                placeholder="Ingrese el nombre del producto..."
+                placeholder="Ingrese el nombre del restaurante..."
                 onChangeText={(e) => setSearch(e)}
                 containerStyle={styles.searchBar}
                 value={search}
             />
             {
-                size(products) > 0 ? (
+                size(restaurants) > 0 ? (
                     <FlatList
-                        data={products}
+                        data={restaurants}
                         keyExtractor={(item, index) => index.toString()}
-                        renderItem={(product) => 
-                            <Product
-                                product={product}
+                        renderItem={(restaurant) => 
+                            <Restaurant
+                                restaurant={restaurant}
                                 navigation={navigation}
                             />
                         }
@@ -46,9 +46,8 @@ export default function Search({ navigation }) {
                 ) : (
                     isEmpty(search) ? (
                         <Text style={styles.notFound}>
-                            Ingrese las primeras letras del nombre del producto.{"\n"}
+                            Ingrese las primeras letras del nombre del restaurante.{"\n"}  
                         </Text>
-
                     ) : (
                         <Text style={styles.notFound}>
                             No hay restaurantes que coincidan con el criterio de busqueda.
@@ -60,8 +59,8 @@ export default function Search({ navigation }) {
     )
 }
 
-function Product({ product, navigation }) {
-    const { id, nameProduct, images } = product.item
+function Restaurant({ restaurant, navigation }) {
+    const { id, nameRestaurant, nameProduct, images } = restaurant.item
 
     return (
         <ListItem
@@ -74,10 +73,13 @@ function Product({ product, navigation }) {
             <Image
                 resizeMode="cover"
                 PlaceholderContent={<ActivityIndicator color="#fff"/>}
-                source={{ uri: images[0] }}
+                source={{ uri: images[2] }}
                 style={styles.imageRestaurant}
             />
             <ListItem.Content>
+                <ListItem.Title style={{fontWeight: "bold"}}>
+                    {nameRestaurant}
+                </ListItem.Title>
                 <ListItem.Title>
                     {nameProduct}
                 </ListItem.Title>

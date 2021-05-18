@@ -79,7 +79,7 @@ export default function Products({ navigation }) {
                 <Icon
                 type="material-community"
                 name="plus"
-                color="#721c1c"
+                color="#ff2020"
                 reverse
                 containerStyle={styles.btnContainer}
                 onPress={() => navigation.navigate("add-products")}

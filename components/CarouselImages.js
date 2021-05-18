@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         marginHorizontal: 2,
-        backgroundColor: "#721c1c"
+        backgroundColor: "#ff2020"
     },
     dotInactive: {
         width: 14,

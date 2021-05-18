@@ -1,8 +1,11 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View, Platform, Alert } from 'react-native'
 import { Button, Icon, Input } from 'react-native-elements'
 import { useNavigation } from '@react-navigation/native'
 import { isEmpty } from 'lodash'
+
+import * as GoogleSignIn from 'expo-google-sign-in'
+import firebase from 'firebase'
 
 import { validateEmail } from '../../utils/helpers'
 import Loading from '../Loading'
@@ -19,6 +22,69 @@ export default function LoginForm() {
     
     const onChange = (e, type) => {
         setFormData({ ...formData, [type]: e.nativeEvent.text })
+    }
+
+    async function googleSignInAsync() {
+        try {
+            await GoogleSignIn.initAsync()
+            if (Platform.OS === "android") {
+                await GoogleSignIn.askForPlayServicesAsync()
+            }
+            const { type, user } = await GoogleSignIn.signInAsync()
+            if (type === "success") {
+                onSignIn(user)
+                setLoading(false)
+                return true
+            } else {
+                setLoading(false)
+                Alert.alert(JSON.stringify(result))
+                return { cancelled: true }
+            }
+        } catch (error) {
+            setLoading(false)
+            Alert.alert(error.message)
+            return { error: true }
+        }
+    }
+      
+    function onSignIn(googleUser) {
+        const unsubscribe = firebase
+            .auth()
+            .onAuthStateChanged(function (firebaseUser) {
+                unsubscribe()
+                if (!isUserEqual(googleUser, firebaseUser)) {
+                    const credential = firebase.auth.GoogleAuthProvider.credential(
+                        googleUser.auth.idToken,
+                        googleUser.auth.accessToken
+                    )
+                    setLoading(true);
+                    firebase
+                        .auth()
+                        .signInWithCredential(credential)
+                        .then(() => {
+                            setLoading(false)
+                        })
+                        .catch(function (error) {
+                            setLoading(false)
+                            Alert.alert(error.message)
+                        })
+                } else {
+                    Alert.alert("Usuario ya está logueado")
+                }
+            });
+    }
+      
+    function isUserEqual(googleUser, firebaseUser) {
+        if (firebaseUser) {
+            let providerData = firebaseUser.providerData
+            for (let i = 0; i < providerData.length; i++) {
+                if (providerData[i].providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+                    providerData[i].uid === googleUser.getBasicProfile().getId()) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     const doLogin = async() => {
@@ -90,6 +156,21 @@ export default function LoginForm() {
                 buttonStyle={styles.btn}
                 onPress={() => doLogin()}
             />
+            <Button
+                title="Iniciar Sesion con Google"
+                containerStyle={styles.btnContainer}
+                buttonStyle={styles.btnGoogle}
+                onPress={ googleSignInAsync }
+                icon={
+                    <Icon
+                        name="google"
+                        type="material-community"
+                        marginRight={10}
+                        size={20}
+                        color="#FFF"
+                    />
+                }
+            />
             <Loading isVisible={loading} text="Iniciando Sesion..."/>
         </View>
     )
@@ -104,7 +185,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        marginTop: 30
+        marginTop: 10
     },
     input: {
         width: "100%"
@@ -118,6 +199,9 @@ const styles = StyleSheet.create({
         alignSelf: "center"
     },
     btn: {
-        backgroundColor: "#721c1c"
+        backgroundColor: "#ff2020"
+    },
+    btnGoogle: {
+        backgroundColor: "#616467"
     }
 })

@@ -3,9 +3,9 @@ import { ScrollView, StyleSheet, Text, View, FlatList, ActivityIndicator } from 
 import { SearchBar, ListItem, Icon, Image } from 'react-native-elements'
 import { isEmpty, size } from 'lodash'
 
-import { searchProducts } from '../utils/actions'
+import { searchTypeAttention } from '../../utils/actions'
 
-export default function Search({ navigation }) {
+export default function SearchTypeAttention({ navigation }) {
     const [search, setSearch] = useState("")
     const [products, setProducts] = useState([])
 
@@ -15,7 +15,7 @@ export default function Search({ navigation }) {
         }
 
         async function getData() {
-            const response = await searchProducts(search)
+            const response = await searchTypeAttention(search)
             if (response.statusResponse) {
                 setProducts(response.products)
             }
@@ -26,7 +26,7 @@ export default function Search({ navigation }) {
     return (
         <ScrollView>
             <SearchBar
-                placeholder="Ingrese el nombre del producto..."
+                placeholder="Ingrese el tipo de comida que busques..."
                 onChangeText={(e) => setSearch(e)}
                 containerStyle={styles.searchBar}
                 value={search}
@@ -46,12 +46,46 @@ export default function Search({ navigation }) {
                 ) : (
                     isEmpty(search) ? (
                         <Text style={styles.notFound}>
-                            Ingrese las primeras letras del nombre del producto.{"\n"}
+                            Debido a la situaciom que todos estamos viviendo, tenemos que cuidarnos, y podras buscar como deseas
+                            consumir tu comida/bebida. Cuando te decidas, ingresalo en la barra
+                            de busqueda.{"\n"}
+                            <Icon
+                                type="font-awesome-5"
+                                name="car-side"
+                                size={20}
+                                color= "#ff2020"
+                                style={{ paddingRight: 10, paddingTop: 15}}
+                            />
+                            <Text style={styles.notFound}>
+                                Delivery{"\n"}
+                            </Text>
+
+                            <Icon
+                                type="font-awesome-5"
+                                name="store-alt"
+                                size={20}
+                                color= "#ff2020"
+                                style={{ paddingRight: 10, paddingTop: 15}}
+                            />
+                            <Text style={styles.notFound}>
+                                Consumo en local{"\n"}
+                            </Text>
+
+                            <Icon
+                                type="font-awesome-5"
+                                name="people-arrows"
+                                size={20}
+                                color= "#ff2020"
+                                style={{ paddingRight: 10, paddingTop: 15}}
+                            />
+                            <Text style={styles.notFound}>
+                                Recojo en local{"\n"}
+                            </Text>
                         </Text>
 
                     ) : (
                         <Text style={styles.notFound}>
-                            No hay restaurantes que coincidan con el criterio de busqueda.
+                            No hay productos que coincidan con el criterio de busqueda.
                         </Text>
                     )
                 )
@@ -61,7 +95,7 @@ export default function Search({ navigation }) {
 }
 
 function Product({ product, navigation }) {
-    const { id, nameProduct, images } = product.item
+    const { id, nameProduct, images, typeAttention } = product.item
 
     return (
         <ListItem
@@ -78,6 +112,9 @@ function Product({ product, navigation }) {
                 style={styles.imageRestaurant}
             />
             <ListItem.Content>
+                <ListItem.Title style={{fontWeight: "bold"}}>
+                    {typeAttention}
+                </ListItem.Title>
                 <ListItem.Title>
                     {nameProduct}
                 </ListItem.Title>
@@ -101,7 +138,8 @@ const styles = StyleSheet.create({
     },
     notFound: {
         alignSelf: "center",
-        width: "90%"
+        width: "90%",
+        textAlign: "justify"
     },
     menuItem: {
         margin: 10

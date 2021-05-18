@@ -66,12 +66,12 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         backgroundColor: "#FFFFFF",
         borderTopWidth: 1,
-        borderTopColor: "#721c1c",
+        borderTopColor: "#ff2020",
         borderBottomWidth: 1,
-        borderBottomColor: "#721c1c",
+        borderBottomColor: "#ff2020",
         paddingVertical: 10
     },
     btn: {
-        color: "#721c1c"
+        color: "#ff2020"
     }
 })
